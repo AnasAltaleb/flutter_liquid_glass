@@ -314,65 +314,78 @@ class _LiquidGlassState extends State<LiquidGlass>
           );
         }
 
-        // Fallback for analytical optics mode
+        // Compute fluid squish and volume-preserving elasticity
+        final speedX = widget.velocity.dx.abs();
+        final speedY = widget.velocity.dy.abs();
+        final ex = (speedX * 0.00003).clamp(0.0, 0.05);
+        final ey = (speedY * 0.00003).clamp(0.0, 0.05);
+        final wobble = (widget.fluidWobble * 0.035).clamp(-0.035, 0.035);
+        final scaleX = (1.0 + (ex - ey * 0.5) + wobble).clamp(0.94, 1.06);
+        final scaleY = (1.0 + (ey - ex * 0.5) - wobble).clamp(0.94, 1.06);
+
+        // Fallback for Web and platforms where runtime GLSL shaders are unsupported
         return SizedBox(
           width: totalWidth,
           height: totalHeight,
           child: Center(
-            child: Container(
-              width: widget.width,
-              height: widget.height,
-              decoration: ShapeDecoration(
-                shape: _getShapeBorder(),
-                shadows: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.35),
-                    blurRadius: 36,
-                    spreadRadius: -4,
-                    offset: const Offset(0, 18),
-                  ),
-                  BoxShadow(
-                    color: effectiveTintColor.withValues(alpha: 0.18),
-                    blurRadius: 24,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: borderRadius,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    BackdropFilter(
-                      filter: imageFilter,
-                      blendMode: BlendMode.srcOver,
-                      child: Container(color: Colors.transparent),
+            child: Transform.scale(
+              scaleX: scaleX,
+              scaleY: scaleY,
+              child: Container(
+                width: widget.width,
+                height: widget.height,
+                decoration: ShapeDecoration(
+                  shape: _getShapeBorder(),
+                  shadows: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      blurRadius: 36,
+                      spreadRadius: -4,
+                      offset: const Offset(0, 18),
                     ),
-                    CustomPaint(
-                      painter: MeniscusRimPainter(
-                        borderRadius: borderRadius,
-                        strokeWidth: effectiveMeniscusThickness,
-                        lightAngle: effectiveLightAngle,
-                        specularIntensity: effectiveSpecularIntensity,
+                    BoxShadow(
+                      color: effectiveTintColor.withValues(alpha: 0.18),
+                      blurRadius: 24,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: borderRadius,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      BackdropFilter(
+                        filter: imageFilter,
+                        blendMode: BlendMode.srcOver,
+                        child: Container(color: Colors.transparent),
                       ),
-                    ),
-                    CustomPaint(
-                      painter: SpecularGlarePainter(
-                        borderRadius: borderRadius,
-                        intensity: effectiveSpecularIntensity,
-                        lightAngle: effectiveLightAngle,
-                      ),
-                    ),
-                    if (widget.child != null)
-                      Center(
-                        child: SizedBox(
-                          width: widget.width,
-                          height: widget.height,
-                          child: widget.child!,
+                      CustomPaint(
+                        painter: MeniscusRimPainter(
+                          borderRadius: borderRadius,
+                          strokeWidth: effectiveMeniscusThickness,
+                          lightAngle: effectiveLightAngle,
+                          specularIntensity: effectiveSpecularIntensity,
                         ),
                       ),
-                  ],
+                      CustomPaint(
+                        painter: SpecularGlarePainter(
+                          borderRadius: borderRadius,
+                          intensity: effectiveSpecularIntensity,
+                          lightAngle: effectiveLightAngle,
+                        ),
+                      ),
+                      if (widget.child != null)
+                        Center(
+                          child: SizedBox(
+                            width: widget.width,
+                            height: widget.height,
+                            child: widget.child!,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
