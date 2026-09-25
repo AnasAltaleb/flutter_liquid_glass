@@ -1,0 +1,21 @@
+name: liquid_glass
+description: "Authentic Apple-style liquid glass effect in pure Flutter with GLSL refraction, chromatic dispersion, edge meniscus lens, and squishy fluid physics."
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.13.2
+  flutter: ">=3.16.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  shaders:
+    - shaders/liquid_glass.frag
