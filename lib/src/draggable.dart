@@ -136,13 +136,16 @@ class _DraggableLiquidGlassState extends State<DraggableLiquidGlass>
     final instantV = details.delta / dt;
 
     final screenSize = MediaQuery.maybeSizeOf(context) ?? const Size(800, 600);
-    final maxX = math.max(0.0, screenSize.width - widget.width - 16);
-    final maxY = math.max(0.0, screenSize.height - widget.height - 40);
+    final effectiveWidth = math.min(widget.width, math.max(120.0, screenSize.width - 32.0));
+    const minX = 16.0;
+    final maxX = math.max(minX, screenSize.width - effectiveWidth - 16.0);
+    const minY = 16.0;
+    final maxY = math.max(minY, screenSize.height - widget.height - 40.0);
 
     setState(() {
       _position = Offset(
-        (_position.dx + details.delta.dx).clamp(16.0, maxX),
-        (_position.dy + details.delta.dy).clamp(16.0, maxY),
+        (_position.dx + details.delta.dx).clamp(minX, maxX),
+        (_position.dy + details.delta.dy).clamp(minY, maxY),
       );
 
       // Smooth velocity with viscous exponential moving average
