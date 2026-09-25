@@ -49,6 +49,7 @@ class MeniscusRimPainter extends CustomPainter {
 
     canvas.drawRRect(rrect, paint);
 
+    // Inner subtle glow hairline for micro-bevel
     final innerPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 0.75
@@ -62,92 +63,4 @@ class MeniscusRimPainter extends CustomPainter {
       oldDelegate.strokeWidth != strokeWidth ||
       oldDelegate.specularIntensity != specularIntensity ||
       oldDelegate.lightAngle != lightAngle;
-}
-
-/// Paints a realistic glossy curved specular highlight on the upper face
-/// of the liquid glass for analytical fallback mode.
-class SpecularGlarePainter extends CustomPainter {
-  final BorderRadius borderRadius;
-  final double intensity;
-  final double lightAngle;
-
-  SpecularGlarePainter({
-    required this.borderRadius,
-    required this.intensity,
-    required this.lightAngle,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (intensity <= 0.05) return;
-
-    final paint = Paint()..style = PaintingStyle.fill;
-    final path = Path();
-    final topGlareHeight = size.height * 0.42;
-
-    path.moveTo(0, borderRadius.topLeft.y);
-    path.arcToPoint(
-      Offset(borderRadius.topLeft.x, 0),
-      radius: borderRadius.topLeft,
-    );
-    path.lineTo(size.width - borderRadius.topRight.x, 0);
-    path.arcToPoint(
-      Offset(size.width, borderRadius.topRight.y),
-      radius: borderRadius.topRight,
-    );
-    path.lineTo(size.width, topGlareHeight * 0.4);
-    path.quadraticBezierTo(
-      size.width * 0.45,
-      topGlareHeight,
-      0,
-      topGlareHeight * 0.8,
-    );
-    path.close();
-
-    paint.shader = ui.Gradient.linear(
-      Offset(size.width * 0.2, 0),
-      Offset(size.width * 0.5, topGlareHeight),
-      [
-        Colors.white.withValues(alpha: (0.35 * intensity).clamp(0.0, 0.8)),
-        Colors.white.withValues(alpha: (0.10 * intensity).clamp(0.0, 0.4)),
-        Colors.white.withValues(alpha: 0.0),
-      ],
-      const [0.0, 0.5, 1.0],
-    );
-
-    canvas.drawPath(path, paint);
-
-    final bottomPaint = Paint()
-      ..style = PaintingStyle.fill
-      ..shader = ui.Gradient.radial(
-        Offset(size.width * 0.85, size.height * 0.85),
-        size.width * 0.35,
-        [
-          Colors.white.withValues(alpha: (0.18 * intensity).clamp(0.0, 0.5)),
-          Colors.white.withValues(alpha: 0.0),
-        ],
-      );
-
-    final bottomPath = Path();
-    bottomPath.moveTo(size.width * 0.6, size.height);
-    bottomPath.lineTo(size.width - borderRadius.bottomRight.x, size.height);
-    bottomPath.arcToPoint(
-      Offset(size.width, size.height - borderRadius.bottomRight.y),
-      radius: borderRadius.bottomRight,
-    );
-    bottomPath.lineTo(size.width, size.height * 0.7);
-    bottomPath.quadraticBezierTo(
-      size.width * 0.8,
-      size.height * 0.78,
-      size.width * 0.6,
-      size.height,
-    );
-    bottomPath.close();
-
-    canvas.drawPath(bottomPath, bottomPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant SpecularGlarePainter oldDelegate) =>
-      oldDelegate.intensity != intensity || oldDelegate.lightAngle != lightAngle;
 }

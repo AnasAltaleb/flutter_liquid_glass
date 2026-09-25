@@ -369,13 +369,6 @@ class _LiquidGlassState extends State<LiquidGlass>
                           specularIntensity: effectiveSpecularIntensity,
                         ),
                       ),
-                      CustomPaint(
-                        painter: SpecularGlarePainter(
-                          borderRadius: borderRadius,
-                          intensity: effectiveSpecularIntensity,
-                          lightAngle: effectiveLightAngle,
-                        ),
-                      ),
                       if (widget.child != null)
                         Center(
                           child: SizedBox(
