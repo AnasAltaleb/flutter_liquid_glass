@@ -127,25 +127,51 @@ void main() {
         edgeDarkening = max(0.0, dot(outwardNormal, vec2(0.2, 0.8))) * (1.0 - t) * 0.28;
     }
     
-    // Sample backdrop with chromatic dispersion
-    vec2 uvG = clamp(sampleCoord / u_size, vec2(0.001), vec2(0.999));
-    vec2 uvR = clamp((sampleCoord - outwardNormal * chromaticDisp) / u_size, vec2(0.001), vec2(0.999));
-    vec2 uvB = clamp((sampleCoord + outwardNormal * chromaticDisp) / u_size, vec2(0.001), vec2(0.999));
-    
-    vec4 colR = texture(u_texture, uvR);
-    vec4 colG = texture(u_texture, uvG);
-    vec4 colB = texture(u_texture, uvB);
-    
-    // Optional center frost blur
-    if (u_frost > 0.02) {
-        float b = u_frost * 4.0;
-        vec2 bUV = vec2(b) / u_size;
-        colR = (colR + texture(u_texture, uvR + vec2(bUV.x, bUV.y)) + texture(u_texture, uvR - vec2(bUV.x, bUV.y))) / 3.0;
-        colG = (colG + texture(u_texture, uvG + vec2(bUV.x, -bUV.y)) + texture(u_texture, uvG - vec2(bUV.x, -bUV.y))) / 3.0;
-        colB = (colB + texture(u_texture, uvB + vec2(0.0, bUV.y)) + texture(u_texture, uvB - vec2(0.0, bUV.y))) / 3.0;
+    // Sample backdrop with optical refraction, chromatic dispersion, and true frosted blur
+    vec3 col;
+    if (u_frost < 0.01) {
+        vec2 uvG = clamp(sampleCoord / u_size, vec2(0.001), vec2(0.999));
+        vec2 uvR = clamp((sampleCoord - outwardNormal * chromaticDisp) / u_size, vec2(0.001), vec2(0.999));
+        vec2 uvB = clamp((sampleCoord + outwardNormal * chromaticDisp) / u_size, vec2(0.001), vec2(0.999));
+        col = vec3(
+            texture(u_texture, uvR).r,
+            texture(u_texture, uvG).g,
+            texture(u_texture, uvB).b
+        );
+    } else {
+        float blurRadius = u_frost * 28.0;
+        vec2 dispVec = outwardNormal * (chromaticDisp * max(0.0, 1.0 - u_frost * 1.5));
+        
+        // Spatial hash for angle jitter to eliminate discrete rings and banding
+        float dither = fract(sin(dot(fragCoord, vec2(12.9898, 78.233))) * 43758.5453);
+        float ditherAngle = dither * 6.2831853;
+        
+        vec3 accum = vec3(0.0);
+        float totalWeight = 0.0;
+        
+        // 16-tap Vogel's golden-spiral Gaussian blur
+        for (int i = 0; i < 16; i++) {
+            float fi = float(i);
+            float theta = fi * 2.3999632 + ditherAngle; // Golden angle (approx 137.5 deg)
+            float r = sqrt((fi + 0.5) / 16.0) * blurRadius;
+            vec2 offset = vec2(cos(theta), sin(theta)) * r;
+            
+            vec2 sampleG = (sampleCoord + offset) / u_size;
+            vec2 sampleR = (sampleCoord + offset - dispVec) / u_size;
+            vec2 sampleB = (sampleCoord + offset + dispVec) / u_size;
+            
+            float w = exp(-2.0 * (fi / 16.0));
+            
+            float rVal = texture(u_texture, clamp(sampleR, vec2(0.001), vec2(0.999))).r;
+            float gVal = texture(u_texture, clamp(sampleG, vec2(0.001), vec2(0.999))).g;
+            float bVal = texture(u_texture, clamp(sampleB, vec2(0.001), vec2(0.999))).b;
+            
+            accum += vec3(rVal, gVal, bVal) * w;
+            totalWeight += w;
+        }
+        
+        col = accum / totalWeight;
     }
-    
-    vec3 col = vec3(colR.r, colG.g, colB.b);
     
     // Internal rim attenuation
     col *= (1.0 - edgeDarkening);
