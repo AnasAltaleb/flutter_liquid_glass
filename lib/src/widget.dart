@@ -255,8 +255,8 @@ class _LiquidGlassState extends State<LiquidGlass>
             // Uniform 7: u_rim_thickness
             _shader!.setFloat(7, effectiveRimThickness * pixelRatio);
 
-            // Uniform 8: u_refraction
-            _shader!.setFloat(8, effectiveRefraction * 42.0 * pixelRatio);
+            // Uniform 8: u_refraction (optical refraction coefficient 0.0 to 1.0)
+            _shader!.setFloat(8, effectiveRefraction.clamp(0.0, 1.0));
 
             // Uniform 9: u_dispersion
             _shader!.setFloat(9, effectiveChromaticAberration * 0.15);

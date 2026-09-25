@@ -104,13 +104,17 @@ void main() {
         float curve = sin((1.0 - t) * 1.5707963);
         curve = pow(curve, 1.8);
         
-        // Ray bending: incoming light bends inward toward the center of the lens
+        // Ray bending: for physical glass (n ≈ 1.52), maximum refraction displacement
+        // through the curved bevel is geometrically bounded by the meniscus rim width.
+        // Scaling with rimWidth guarantees that reducing the edge meniscus thickness
+        // naturally reduces the background range being sampled, preventing unnatural pinching.
+        float maxDisplacement = rimWidth * (u_refraction * 0.72);
         vec2 refractDir = -outwardNormal;
-        vec2 offsetPixels = refractDir * (curve * u_refraction);
+        vec2 offsetPixels = refractDir * (curve * maxDisplacement);
         sampleCoord = fragCoord + offsetPixels;
         
-        // Chromatic dispersion proportional to curvature
-        chromaticDisp = u_dispersion * curve * u_refraction * 0.6;
+        // Chromatic dispersion is a small physical fraction of the refraction displacement
+        chromaticDisp = u_dispersion * curve * maxDisplacement * 0.20;
         
         // 3D Surface normal for specular light reflection
         float edgeHeight = sqrt(max(0.01, 1.0 - pow(1.0 - t, 2.0)));
