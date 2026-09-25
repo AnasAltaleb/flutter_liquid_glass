@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -359,14 +360,36 @@ class _LiquidGlassState extends State<LiquidGlass>
                       BackdropFilter(
                         filter: imageFilter,
                         blendMode: BlendMode.srcOver,
-                        child: Container(color: Colors.transparent),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: borderRadius,
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white.withValues(
+                                  alpha: (0.16 * effectiveSpecularIntensity)
+                                      .clamp(0.06, 0.30),
+                                ),
+                                Colors.white.withValues(alpha: 0.03),
+                                effectiveTintColor.withValues(
+                                  alpha: math.max(0.08, effectiveTintOpacity * 2.5),
+                                ),
+                                Colors.black.withValues(alpha: 0.14),
+                              ],
+                              stops: const [0.0, 0.35, 0.70, 1.0],
+                            ),
+                          ),
+                        ),
                       ),
                       CustomPaint(
                         painter: MeniscusRimPainter(
                           borderRadius: borderRadius,
-                          strokeWidth: effectiveMeniscusThickness,
+                          rimThickness: effectiveRimThickness,
+                          meniscusThickness: effectiveMeniscusThickness,
                           lightAngle: effectiveLightAngle,
                           specularIntensity: effectiveSpecularIntensity,
+                          tintColor: effectiveTintColor,
                         ),
                       ),
                       if (widget.child != null)
@@ -389,8 +412,9 @@ class _LiquidGlassState extends State<LiquidGlass>
   }
 
   ui.ImageFilter _buildAnalyticalFilter(double blur, double refraction) {
-    final blurSigma = blur.clamp(0.1, 50.0);
-    final scale = 1.0 + (refraction * 0.08);
+    // Real glass always has optical diffusion; ensure a tactile baseline
+    final blurSigma = blur > 0 ? blur : (14.0 * refraction).clamp(6.0, 24.0);
+    final scale = 1.0 + (refraction * 0.06);
     final matrix = Matrix4.identity()
       ..translateByDouble(widget.width / 2, widget.height / 2, 0.0, 0.0)
       ..scaleByDouble(scale, scale, 1.0, 1.0)
